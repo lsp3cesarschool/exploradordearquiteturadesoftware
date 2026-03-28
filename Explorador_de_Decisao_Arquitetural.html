@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorador de Decisão Arquitetural</title>
+  <meta name="author" content="Luciano Pinheiro" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #121935;
+      --card: #ffffff;
+      --ink: #172033;
+      --muted: #5a6478;
+      --line: #dbe2ef;
+      --primary: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --good: #166534;
+      --warn: #a16207;
+      --bad: #b91c1c;
+      --chip: #eef2ff;
+      --shadow: 0 12px 35px rgba(11,16,32,.12);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #edf4ff 0%, #f8fbff 100%);
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, #0f1d4a, #12397e);
+      color: white;
+      padding: 24px;
+    }
+
+    .topbar h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .topbar p {
+      margin: 0;
+      opacity: .92;
+      max-width: 1050px;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 20px;
+      max-width: 1450px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 20px;
+      align-self: start;
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(219,226,239,.9);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .steps { display: grid; gap: 10px; }
+
+    .stepBtn {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 12px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .stepBtn small {
+      display: block;
+      margin-top: 4px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .stepBtn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .stepBtn.active small { color: rgba(255,255,255,.86); }
+    .main { display: grid; gap: 18px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .sectionTitle { margin: 0 0 6px; font-size: 24px; }
+    .sectionHint { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
+
+    .grid2, .grid3, .grid4 {
+      display: grid;
+      gap: 14px;
+    }
+    .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    label.lbl {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: white;
+    }
+
+    textarea { min-height: 104px; resize: vertical; }
+
+    .chipWrap, .optionGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .checkChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+      transition: .16s ease;
+      color: var(--ink);
+    }
+
+    .checkChip input { accent-color: var(--primary); }
+    .checkChip:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: #0f2f73;
+      font-weight: 700;
+    }
+
+    .ilityCard {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      background: #fcfdff;
+    }
+
+    .ilityHead {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .ilityHead strong { font-size: 15px; }
+    .ilityHead span { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+
+    .sliderRow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .scoreBubble {
+      min-width: 42px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: var(--chip);
+      color: #24335d;
+      font-weight: 800;
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--primary); }
+
+    .patternCard {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      background: white;
+    }
+
+    .patternCard h3 { margin: 0; font-size: 18px; }
+    .mini { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .badge {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: #263a6a;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .stars { color: #a16207; letter-spacing: 1px; font-size: 14px; white-space: nowrap; }
+    .money { color: #15803d; font-weight: 800; }
+
+    .tableWrap { overflow: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1200px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      background: #f7faff;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .rank { font-weight: 800; font-size: 20px; color: var(--primary); }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    button.primary, button.secondary {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .16s ease;
+    }
+
+    button.primary { background: var(--primary); color: white; }
+    button.secondary { background: white; color: var(--ink); border: 1px solid var(--line); }
+    button.primary:hover, button.secondary:hover { transform: translateY(-1px); }
+
+    .hidden { display: none !important; }
+
+    .summaryBox {
+      border: 1px dashed #b8c7e6;
+      background: #f7fbff;
+      border-radius: 16px;
+      padding: 16px;
+      line-height: 1.55;
+    }
+
+    .footerNote { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .refCard { background: #fbfdff; }
+    .refCard a { color: var(--primary); text-decoration: none; }
+    .refCard a:hover { text-decoration: underline; }
+
+    .c4Wrap {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: linear-gradient(180deg, #fff, #f8fbff);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .swatch { width: 12px; height: 12px; border-radius: 999px; display: inline-block; }
+
+    .printOnly { display: none; }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 700px) {
+      .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+      .topbar h1 { font-size: 23px; }
+    }
+
+    @media print {
+      body { background: white; }
+      .sidebar, .actions, .topbar .mini, .toolbar, .legend { display: none !important; }
+      .layout { display: block; max-width: none; padding: 0; }
+      .card { box-shadow: none; border: 1px solid #d0d7e5; margin-bottom: 12px; page-break-inside: avoid; }
+      .stepSection.hidden { display: block !important; }
+      .printOnly { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Explorador de Decisão Arquitetural</h1>
+    <p>Uma SPA em arquivo único para apoiar decisões arquiteturais com base em contexto de negócio, características arquiteturais, restrições reais, componentes e comparação de estilos. O foco é transformar uma ideia em uma recomendação arquitetural justificável, com ranking, trade-offs, mini ADR, diagrama C4 inicial e exportações.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Fluxo sugerido</h2>
+      <div class="steps" id="steps"></div>
+      <div class="card" style="margin-top:16px; padding:14px; background:#f8fbff;">
+        <strong style="display:block; margin-bottom:8px;">Entregáveis</strong>
+        <div class="mini">Ranking arquitetural, matriz comparativa, justificativa textual, mini ADR, diagrama C4 de contexto/contêiner inicial, exportação em JSON, Markdown e PDF via impressão do navegador.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="card stepSection" data-step="0">
+        <h2 class="sectionTitle">1. Ideia e contexto do sistema</h2>
+        <p class="sectionHint">Comece pelo propósito do produto. A arquitetura nasce melhor quando parte do contexto, dos usuários, do objetivo e do tipo de operação esperado.</p>
+        <div class="grid2">
+          <label class="lbl">Nome da ideia
+            <input type="text" id="nomeSistema" placeholder="Ex.: Plataforma de agendamento de consultas" />
+          </label>
+          <label class="lbl">Tipo de produto
+            <select id="tipoProduto">
+              <option>SaaS B2B</option>
+              <option>Aplicativo mobile</option>
+              <option>Sistema interno corporativo</option>
+              <option>Marketplace</option>
+              <option>Portal de conteúdo</option>
+              <option>IoT / edge</option>
+              <option>API / backend puro</option>
+              <option>Outro</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid2" style="margin-top:14px;">
+          <label class="lbl">Resumo da ideia
+            <textarea id="resumoIdeia" placeholder="Descreva o problema, quem usa, o que o sistema faz e por que ele existe."></textarea>
+          </label>
+          <label class="lbl">Objetivo principal
+            <textarea id="objetivoPrincipal" placeholder="Ex.: lançar um MVP em 60 dias, reduzir custo operacional, suportar crescimento nacional..."></textarea>
+          </label>
+        </div>
+        <div class="grid4" style="margin-top:14px;">
+          <label class="lbl">Usuários estimados no 1º ano
+            <select id="volumeUsuarios">
+              <option value="1">Até 1 mil</option>
+              <option value="2">1 mil a 10 mil</option>
+              <option value="3">10 mil a 100 mil</option>
+              <option value="4">100 mil a 1 milhão</option>
+              <option value="5">Acima de 1 milhão</option>
+            </select>
+          </label>
+          <label class="lbl">Equipe de desenvolvimento
+            <select id="tamanhoEquipe">
+              <option value="1">1 a 3 pessoas</option>
+              <option value="2">4 a 8 pessoas</option>
+              <option value="3">9 a 20 pessoas</option>
+              <option value="4">21 a 50 pessoas</option>
+              <option value="5">Mais de 50 pessoas</option>
+            </select>
+          </label>
+          <label class="lbl">Pressão por prazo
+            <select id="pressaoPrazo">
+              <option value="5">Altíssima</option>
+              <option value="4">Alta</option>
+              <option value="3" selected>Média</option>
+              <option value="2">Baixa</option>
+              <option value="1">Muito baixa</option>
+            </select>
+          </label>
+          <label class="lbl">Domínio / bounded context principal
+            <input type="text" id="dominioPrincipal" placeholder="Ex.: agendamentos, pagamentos, atendimento, catálogo" />
+          </label>
+        </div>
+        <div class="actions">
+          <div class="footerNote">Sugestão de uso: preencher esta etapa antes de comparar estilos arquiteturais reduz viés e melhora a justificativa final.</div>
+          <button class="primary nextBtn">Próximo</button>
+        </div>
+      </section>
+
+      <section class="card stepSection hidden" data-step="1">
+        <h2 class="sectionTitle">2. Características arquiteturais prioritárias</h2>
+        <p class="sectionHint">A folha oficial de características enfatiza não selecionar muitas prioridades de uma vez. Aqui você pode atribuir pesos, mas a saída final destacará as principais para apoiar a decisão.</p>
+        <div class="grid3" id="ilityContainer"></div>
+        <div class="actions">
+          <button class="secondary prevBtn">Voltar</button>
+          <button class="primary nextBtn">Próximo</button>
+        </div>
+      </section>
+
+      <section class="card stepSection hidden" data-step="2">
+        <h2 class="sectionTitle">3. Restrições e contexto operacional</h2>
+        <p class="sectionHint">Boas arquiteturas respeitam orçamento, legado, compliance, habilidade da equipe e forma de operação do sistema.</p>
+        <div class="grid4">
+          <label class="lbl">Orçamento de infraestrutura
+            <select id="orcamentoInfra">
+              <option value="1">Muito limitado</option>
+              <option value="2">Limitado</option>
+              <option value="3">Moderado</option>
+              <option value="4">Confortável</option>
+              <option value="5">Amplo</option>
+            </select>
+          </label>
+          <label class="lbl">Maturidade DevOps/SRE
+            <select id="maturidadeOps">
+              <option value="1">Baixíssima</option>
+              <option value="2">Baixa</option>
+              <option value="3">Média</option>
+              <option value="4">Alta</option>
+              <option value="5">Muito alta</option>
+            </select>
+          </label>
+          <label class="lbl">Necessidade de integração com legado
+            <select id="integracaoLegado">
+              <option value="1">Nenhuma</option>
+              <option value="2">Baixa</option>
+              <option value="3">Média</option>
+              <option value="4">Alta</option>
+              <option value="5">Crítica</option>
+            </select>
+          </label>
+          <label class="lbl">Regulação / compliance
+            <select id="compliance">
+              <option value="1">Baixa</option>
+              <option value="2">Moderada</option>
+              <option value="3">Relevante</option>
+              <option value="4">Alta</option>
+              <option value="5">Muito alta</option>
+            </select>
+          </label>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="lbl" style="margin-bottom:8px;">Canais e contexto operacional</div>
+          <div class="chipWrap">
+            <label class="checkChip"><input type="checkbox" value="web" class="contextTag" checked /> Web</label>
+            <label class="checkChip"><input type="checkbox" value="mobile" class="contextTag" /> Mobile</label>
+            <label class="checkChip"><input type="checkbox" value="api" class="contextTag" checked /> API pública/privada</label>
+            <label class="checkChip"><input type="checkbox" value="batch" class="contextTag" /> Batch / jobs agendados</label>
+            <label class="checkChip"><input type="checkbox" value="stream" class="contextTag" /> Eventos / streaming</label>
+            <label class="checkChip"><input type="checkbox" value="offline" class="contextTag" /> Offline / edge</label>
+            <label class="checkChip"><input type="checkbox" value="multitenant" class="contextTag" /> Multi-tenant</label>
+            <label class="checkChip"><input type="checkbox" value="tempo-real" class="contextTag" /> Tempo real</label>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:16px;">
+          <label class="lbl">Restrições técnicas já definidas
+            <textarea id="restricoesTecnicas" placeholder="Ex.: precisa rodar em Kubernetes, precisa usar PostgreSQL, ambiente on-premises, integração com ERP/SEI/SAP etc."></textarea>
+          </label>
+          <label class="lbl">Riscos percebidos
+            <textarea id="riscosPercebidos" placeholder="Ex.: equipe pequena, domínio complexo, picos sazonais, alta criticidade, pouca observabilidade..." ></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="secondary prevBtn">Voltar</button>
+          <button class="primary nextBtn">Próximo</button>
+        </div>
+      </section>
+
+      <section class="card stepSection hidden" data-step="3">
+        <h2 class="sectionTitle">4. Componentes e módulos</h2>
+        <p class="sectionHint">Essa etapa materializa a ideia em blocos concretos. Os componentes escolhidos influenciam diretamente a recomendação arquitetural e o C4 inicial.</p>
+        <div class="grid3">
+          <div>
+            <div class="lbl" style="margin-bottom:8px;">Componentes funcionais</div>
+            <div class="chipWrap">
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="auth" checked /> Autenticação</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="usuarios" checked /> Gestão de usuários</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="pagamentos" /> Pagamentos</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="catalogo" /> Catálogo</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="busca" /> Busca</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="workflow" /> Workflow</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="notificacoes" /> Notificações</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="relatorios" /> Relatórios</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="chat" /> Chat</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="ia" /> IA / recomendações</label>
+            </div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:8px;">Dados e integração</div>
+            <div class="chipWrap">
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="db-relacional" checked /> Banco relacional</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="cache" /> Cache</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="fila" /> Filas</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="event-bus" /> Event bus</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="etl" /> ETL</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="integracao-external" /> APIs externas</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="arquivos" /> Arquivos / storage</label>
+              <label class="checkChip"><input type="checkbox" class="componentTag" value="analytics" /> Analytics</label>
+            </div>
+          </div>
+          <div>
+            <label class="lbl">Componentes livres
+              <textarea id="componentesLivres" placeholder="Digite outros componentes, módulos ou integrações relevantes para a sua ideia."></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="secondary prevBtn">Voltar</button>
+          <button class="primary nextBtn">Calcular recomendações</button>
+        </div>
+      </section>
+
+      <section class="card stepSection hidden" data-step="4">
+        <h2 class="sectionTitle">5. Ranking de estilos arquiteturais</h2>
+        <p class="sectionHint">A recomendação combina pesos das características, restrições reais e sinais vindos dos componentes e do contexto operacional.</p>
+        <div id="topCards" class="grid3"></div>
+        <div class="card refCard" style="margin-top:18px;">
+          <strong>Matriz de referência visual</strong>
+          <div class="mini" style="margin-top:8px;">A tabela abaixo se inspira nas folhas oficiais de estilos e características, incluindo partição técnica/domínio, custo e um conjunto de “ilities” em formato legível.</div>
+        </div>
+        <div class="tableWrap" style="margin-top:18px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Pos.</th>
+                <th>Estilo</th>
+                <th>Partição</th>
+                <th>Pontuação</th>
+                <th>Custo</th>
+                <th>Modificabilidade</th>
+                <th>Testabilidade</th>
+                <th>Deployabilidade</th>
+                <th>Simplicidade</th>
+                <th>Escalabilidade</th>
+                <th>Elasticidade</th>
+                <th>Desempenho</th>
+                <th>Resiliência</th>
+                <th>Observabilidade</th>
+                <th>Interoperabilidade</th>
+                <th>Quando faz sentido</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <button class="secondary prevBtn">Voltar</button>
+          <button class="primary nextBtn">Ver justificativa e C4</button>
+        </div>
+      </section>
+
+      <section class="card stepSection hidden" data-step="5">
+        <h2 class="sectionTitle">6. Justificativa, ADR e C4 inicial</h2>
+        <p class="sectionHint">A decisão arquitetural fica mais útil quando vira explicação clara, trade-offs explícitos e um diagrama inicial suficiente para discussão.</p>
+        <div class="grid2">
+          <div class="summaryBox" id="resumoFinal"></div>
+          <div class="summaryBox">
+            <strong>Mini ADR sugerido</strong>
+            <pre id="adrOutput" style="white-space:pre-wrap; margin:12px 0 0; font-family:inherit;"></pre>
+          </div>
+        </div>
+
+        <div class="c4Wrap" style="margin-top:18px;">
+          <strong>Diagrama C4 inicial</strong>
+          <div class="mini" style="margin-top:6px;">Visualização simplificada de contexto + contêineres principais, gerada a partir dos componentes selecionados.</div>
+          <div id="c4Diagram" style="margin-top:12px;"></div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#dbeafe"></i> Sistema principal</span>
+            <span><i class="swatch" style="background:#ecfccb"></i> Contêineres internos</span>
+            <span><i class="swatch" style="background:#fef3c7"></i> Sistemas externos</span>
+            <span><i class="swatch" style="background:#ede9fe"></i> Pessoas / atores</span>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="secondary" id="copiarAdr">Copiar ADR</button>
+          <button class="secondary" id="baixarMarkdown">Baixar Markdown</button>
+          <button class="secondary" id="baixarJson">Baixar JSON</button>
+          <button class="secondary" id="exportarPdf">Exportar PDF</button>
+          <button class="primary" id="reiniciar">Reiniciar</button>
+        </div>
+      </section>
+
+      <section class="card refCard printOnly" id="refsPrint"></section>
+
+      <section class="card refCard">
+        <h2 class="sectionTitle">Referências usadas nesta SPA</h2>
+        <div class="mini">Estas referências aparecem dentro do próprio site porque a ferramenta se inspira diretamente nos worksheets oficiais e em literatura amplamente utilizada em arquitetura de software.</div>
+        <div style="margin-top:12px; line-height:1.7;">
+          <div><strong>DeveloperToArchitect.com — Worksheets oficiais</strong><br>
+            <a href="https://developertoarchitect.com/downloads/worksheets.html" target="_blank" rel="noopener">https://developertoarchitect.com/downloads/worksheets.html</a>
+          </div>
+          <div style="margin-top:10px;"><strong>Mark Richards — Architecture Styles Worksheet</strong><br>
+            Base para a comparação entre layered, modular monolith, microkernel, microservices, service-based, service-oriented, event-driven e space-based.
+          </div>
+          <div style="margin-top:10px;"><strong>Mark Richards — Architecture Characteristics Worksheet</strong><br>
+            Base para priorização de características arquiteturais, incluindo observabilidade, disponibilidade, testabilidade, elasticidade, interoperabilidade, abstração, integridade e consistência de dados.
+          </div>
+          <div style="margin-top:10px;"><strong>Fundamentals of Software Architecture</strong> — Mark Richards e Neal Ford</div>
+          <div><strong>Software Architecture in Practice</strong> — Bass, Clements e Kazman</div>
+          <div><strong>Documenting Software Architectures</strong> — Clements e colaboradores</div>
+          <div><strong>C4 Model</strong> — Simon Brown</div>
+          <div><strong>Architecture Decision Records (ADR)</strong> — prática consolidada de registro de decisões arquiteturais</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const etapas = [
+      { titulo: 'Ideia', subtitulo: 'entender contexto' },
+      { titulo: 'Características', subtitulo: 'priorizar qualidades' },
+      { titulo: 'Restrições', subtitulo: 'aceitar o mundo real' },
+      { titulo: 'Componentes', subtitulo: 'mapear blocos do sistema' },
+      { titulo: 'Ranking', subtitulo: 'comparar estilos' },
+      { titulo: 'ADR + C4', subtitulo: 'explicar a decisão' }
+    ];
+
+    const ilities = [
+      ['modificabilidade', 'facilidade para mudar o sistema'],
+      ['escalabilidade', 'capacidade de crescer sem colapsar'],
+      ['disponibilidade', 'continuar operando mesmo com falhas'],
+      ['desempenho', 'tempo de resposta e throughput'],
+      ['seguranca', 'proteção de dados e superfícies de ataque'],
+      ['testabilidade', 'facilidade para validar comportamento'],
+      ['deployabilidade', 'facilidade de liberar mudanças'],
+      ['interoperabilidade', 'integração com outros sistemas'],
+      ['observabilidade', 'visibilidade para operação e diagnóstico'],
+      ['simplicidade', 'baixo custo cognitivo para equipe'],
+      ['elasticidade', 'adaptar capacidade automaticamente'],
+      ['resiliencia', 'absorver falhas e degradar bem'],
+      ['extensibilidade', 'expandir funcionalidades com pouco atrito'],
+      ['adaptabilidade', 'absorver mudanças de contexto'],
+      ['workflow', 'suportar fluxos complexos'],
+      ['integridade-dados', 'preservar correção dos dados'],
+      ['consistencia-dados', 'manter sincronismo entre fontes'],
+      ['abstracao', 'isolar partes e dependências']
+    ];
+
+    const estilos = [
+      {
+        id: 'layered', nome: 'Layered', particao: 'técnica', custo: 1,
+        base: { simplicidade: 5, modificabilidade: 3, testabilidade: 2, deployabilidade: 1, interoperabilidade: 1, desempenho: 3, escalabilidade: 1, elasticidade: 1, resiliencia: 1, seguranca: 2, disponibilidade: 2, observabilidade: 2, extensibilidade: 2, adaptabilidade: 2, workflow: 2, 'integridade-dados': 3, 'consistencia-dados': 3, abstracao: 1 },
+        resumo: 'Boa opção pragmática para soluções menores ou com forte pressão por simplicidade.',
+        fortes: ['baixo atrito inicial', 'estrutura previsível', 'bom ponto de partida'],
+        riscos: ['pode virar monólito rígido', 'escala seletiva limitada', 'acoplamento entre camadas'],
+        evitar: 'Quando há alto volume, domínios muito distintos ou necessidade forte de escalar partes separadamente.'
+      },
+      {
+        id: 'modular-monolith', nome: 'Monólito modular', particao: 'domínio', custo: 1,
+        base: { simplicidade: 5, modificabilidade: 4, testabilidade: 2, deployabilidade: 2, interoperabilidade: 1, desempenho: 3, escalabilidade: 1, elasticidade: 1, resiliencia: 1, seguranca: 2, disponibilidade: 3, observabilidade: 3, extensibilidade: 3, adaptabilidade: 3, workflow: 3, 'integridade-dados': 4, 'consistencia-dados': 4, abstracao: 1 },
+        resumo: 'Em muitos cenários é a melhor arquitetura inicial: simples de operar, mas organizada por módulos.',
+        fortes: ['equilíbrio entre ordem e custo operacional', 'menos overhead distribuído', 'bom caminho para evoluir'],
+        riscos: ['exige disciplina modular', 'pode degradar', 'escala independente limitada'],
+        evitar: 'Quando o sistema já nasce com necessidade explícita de domínios independentes e deploys autônomos por times grandes.'
+      },
+      {
+        id: 'microkernel', nome: 'Microkernel / plugins', particao: 'domínio', custo: 1,
+        base: { simplicidade: 4, modificabilidade: 3, testabilidade: 3, deployabilidade: 3, interoperabilidade: 3, desempenho: 3, escalabilidade: 1, elasticidade: 1, resiliencia: 1, seguranca: 2, disponibilidade: 3, observabilidade: 3, extensibilidade: 4, adaptabilidade: 3, workflow: 3, 'integridade-dados': 3, 'consistencia-dados': 3, abstracao: 3 },
+        resumo: 'Faz sentido quando o núcleo é estável e as capacidades variam por plugins, regras ou extensões.',
+        fortes: ['extensibilidade', 'bom para plataformas', 'núcleo mais controlado'],
+        riscos: ['design de extensões complexo', 'fronteiras mal definidas', 'depuração difícil'],
+        evitar: 'Quando o problema central não é extensibilidade por plugins.'
+      },
+      {
+        id: 'microservices', nome: 'Microservices', particao: 'domínio', custo: 5,
+        base: { simplicidade: 1, modificabilidade: 5, testabilidade: 5, deployabilidade: 5, interoperabilidade: 3, desempenho: 2, escalabilidade: 5, elasticidade: 4, resiliencia: 5, seguranca: 3, disponibilidade: 5, observabilidade: 4, extensibilidade: 5, adaptabilidade: 4, workflow: 2, 'integridade-dados': 2, 'consistencia-dados': 1, abstracao: 1 },
+        resumo: 'Excelente para autonomia de times e escala seletiva, mas cobra preço operacional e cognitivo alto.',
+        fortes: ['deploy independente', 'escala por serviço', 'alinhamento com domínios e times'],
+        riscos: ['complexidade distribuída', 'custos de observabilidade e rede', 'consistência e testes mais difíceis'],
+        evitar: 'Quando a equipe é pequena, a maturidade operacional é baixa ou o produto ainda está descobrindo seu domínio.'
+      },
+      {
+        id: 'service-based', nome: 'Service-based', particao: 'domínio', custo: 2,
+        base: { simplicidade: 3, modificabilidade: 4, testabilidade: 4, deployabilidade: 4, interoperabilidade: 2, desempenho: 3, escalabilidade: 3, elasticidade: 2, resiliencia: 4, seguranca: 3, disponibilidade: 4, observabilidade: 4, extensibilidade: 4, adaptabilidade: 4, workflow: 3, 'integridade-dados': 3, 'consistencia-dados': 2, abstracao: 1 },
+        resumo: 'Meio-termo útil entre monólito modular e microservices, separando serviços principais sem pulverizar tudo.',
+        fortes: ['transição gradual', 'menos complexidade que microservices puros', 'boa separação de capacidades'],
+        riscos: ['governança híbrida', 'fronteiras confusas', 'pode herdar problemas dos dois mundos'],
+        evitar: 'Quando não há clareza sobre quais capacidades realmente merecem sair do núcleo.'
+      },
+      {
+        id: 'soa', nome: 'Service-oriented', particao: 'técnica', custo: 4,
+        base: { simplicidade: 1, modificabilidade: 1, testabilidade: 1, deployabilidade: 1, interoperabilidade: 5, desempenho: 2, escalabilidade: 3, elasticidade: 3, resiliencia: 3, seguranca: 3, disponibilidade: 3, observabilidade: 3, extensibilidade: 1, adaptabilidade: 1, workflow: 5, 'integridade-dados': 4, 'consistencia-dados': 4, abstracao: 5 },
+        resumo: 'Continua relevante quando interoperabilidade corporativa e integração de processos são o centro da arquitetura.',
+        fortes: ['forte integração entre sistemas', 'governança corporativa', 'bom para ecossistemas legados'],
+        riscos: ['mais burocracia', 'infraestrutura mais pesada', 'menor agilidade inicial'],
+        evitar: 'Quando o produto é novo, enxuto e sem forte legado corporativo.'
+      },
+      {
+        id: 'event-driven', nome: 'Event-driven', particao: 'técnica', custo: 3,
+        base: { simplicidade: 2, modificabilidade: 4, testabilidade: 2, deployabilidade: 3, interoperabilidade: 3, desempenho: 5, escalabilidade: 4, elasticidade: 4, resiliencia: 5, seguranca: 3, disponibilidade: 4, observabilidade: 4, extensibilidade: 4, adaptabilidade: 4, workflow: 4, 'integridade-dados': 3, 'consistencia-dados': 3, abstracao: 4 },
+        resumo: 'Brilha em cenários de desacoplamento, integração assíncrona, streaming e reação a eventos de negócio.',
+        fortes: ['desacoplamento temporal', 'escala bem', 'bom para notificações, integrações e pipelines'],
+        riscos: ['rastreio mais difícil', 'consistência eventual', 'depuração mentalmente mais exigente'],
+        evitar: 'Quando o time precisa máxima previsibilidade linear e quase tudo é simples CRUD síncrono.'
+      },
+      {
+        id: 'space-based', nome: 'Space-based', particao: 'técnica', custo: 4,
+        base: { simplicidade: 1, modificabilidade: 3, testabilidade: 1, deployabilidade: 3, interoperabilidade: 2, desempenho: 5, escalabilidade: 5, elasticidade: 5, resiliencia: 3, seguranca: 2, disponibilidade: 4, observabilidade: 2, extensibilidade: 2, adaptabilidade: 3, workflow: 2, 'integridade-dados': 2, 'consistencia-dados': 2, abstracao: 1 },
+        resumo: 'Estilo mais específico, associado a cargas extremas, memória distribuída e baixa latência.',
+        fortes: ['alto desempenho', 'escala horizontal agressiva', 'bom para picos extremos'],
+        riscos: ['especializado', 'difícil de justificar em sistemas comuns', 'infra e diagnóstico mais complexos'],
+        evitar: 'Na maioria dos sistemas corporativos comuns e MVPs.'
+      }
+    ];
+
+    let etapaAtual = 0;
+    const estado = { ilities: {}, ranking: [] };
+
+    const stepsEl = document.getElementById('steps');
+    const stepSections = [...document.querySelectorAll('.stepSection')];
+
+    function montarSteps() {
+      stepsEl.innerHTML = etapas.map((etapa, i) => `
+        <button class="stepBtn ${i === etapaAtual ? 'active' : ''}" data-go="${i}">
+          ${i + 1}. ${etapa.titulo}
+          <small>${etapa.subtitulo}</small>
+        </button>
+      `).join('');
+      [...document.querySelectorAll('.stepBtn')].forEach(btn => {
+        btn.addEventListener('click', () => irPara(Number(btn.dataset.go)));
+      });
+    }
+
+    function montarIlities() {
+      const c = document.getElementById('ilityContainer');
+      c.innerHTML = ilities.map(([id, desc]) => {
+        const valor = ['simplicidade','modificabilidade','seguranca'].includes(id) ? 4 : 3;
+        estado.ilities[id] = valor;
+        return `
+          <div class="ilityCard">
+            <div class="ilityHead">
+              <div>
+                <strong>${rotuloIlity(id)}</strong>
+                <span>${desc}</span>
+              </div>
+            </div>
+            <div class="sliderRow">
+              <input type="range" min="0" max="5" value="${valor}" data-ility="${id}" />
+              <div class="scoreBubble" id="bubble-${id}">${valor}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      [...c.querySelectorAll('input[type="range"]')].forEach(range => {
+        range.addEventListener('input', e => {
+          const id = e.target.dataset.ility;
+          estado.ilities[id] = Number(e.target.value);
+          document.getElementById(`bubble-${id}`).textContent = e.target.value;
+        });
+      });
+    }
+
+    function irPara(indice) {
+      etapaAtual = Math.max(0, Math.min(stepSections.length - 1, indice));
+      stepSections.forEach(sec => sec.classList.toggle('hidden', Number(sec.dataset.step) !== etapaAtual));
+      montarSteps();
+      if (etapaAtual === 4) calcularRanking();
+      if (etapaAtual === 5) gerarSaidasFinais();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function valor(id) { return document.getElementById(id)?.value || ''; }
+    function selecionados(classe) { return [...document.querySelectorAll(`.${classe}:checked`)].map(el => el.value); }
+
+    function calcularRanking() {
+      const equipe = Number(valor('tamanhoEquipe'));
+      const prazo = Number(valor('pressaoPrazo'));
+      const usuarios = Number(valor('volumeUsuarios'));
+      const infra = Number(valor('orcamentoInfra'));
+      const ops = Number(valor('maturidadeOps'));
+      const legado = Number(valor('integracaoLegado'));
+      const compliance = Number(valor('compliance'));
+      const contextos = selecionados('contextTag');
+      const componentes = selecionados('componentTag');
+      const textoLivre = (valor('componentesLivres') + ' ' + valor('restricoesTecnicas') + ' ' + valor('resumoIdeia')).toLowerCase();
+
+      estado.ranking = estilos.map(estilo => {
+        let score = 0;
+        const motivos = [];
+
+        for (const [ility, peso] of Object.entries(estado.ilities)) {
+          score += (estilo.base[ility] || 0) * peso;
+        }
+
+        if (estilo.id === 'modular-monolith' && equipe <= 2 && prazo >= 4) { score += 12; motivos.push('equipe menor com alta pressão por entrega favorece uma estrutura modular simples'); }
+        if (estilo.id === 'layered' && prazo >= 4) { score += 8; motivos.push('bom para começar rápido com menor custo cognitivo'); }
+        if (estilo.id === 'microservices' && equipe >= 4 && ops >= 4) { score += 16; motivos.push('times maiores e boa maturidade operacional ajudam bastante'); }
+        if (estilo.id === 'microservices' && equipe <= 2) { score -= 18; motivos.push('equipe pequena tende a sofrer com overhead distribuído'); }
+        if (estilo.id === 'event-driven' && (contextos.includes('stream') || contextos.includes('tempo-real') || componentes.includes('fila') || componentes.includes('event-bus'))) { score += 18; motivos.push('cenário com eventos, filas ou tempo real'); }
+        if (estilo.id === 'soa' && legado >= 4) { score += 16; motivos.push('forte integração com legado pesa a favor'); }
+        if (estilo.id === 'service-based' && equipe >= 3) { score += 8; motivos.push('boa transição para times médios'); }
+        if (estilo.id === 'space-based' && usuarios >= 5) { score += 10; motivos.push('carga extrema sugere avaliar este estilo'); }
+        if (estilo.id === 'space-based' && usuarios <= 3) { score -= 14; motivos.push('sofisticação excessiva para o porte informado'); }
+        if (estilo.id === 'layered' && usuarios >= 4) { score -= 8; motivos.push('crescimento pode pressionar camadas rígidas'); }
+        if (estilo.id === 'modular-monolith' && usuarios >= 4) { score += 4; motivos.push('ainda pode servir bem como primeira etapa evolutiva'); }
+        if (estilo.id === 'microkernel' && /plugin|extensao|marketplace de modulos/.test(textoLivre)) { score += 12; motivos.push('há indício de extensibilidade por plugins ou módulos anexáveis'); }
+        if (estilo.id === 'microservices' && infra <= 2) { score -= 12; motivos.push('orçamento restrito pesa contra operação distribuída'); }
+        if (estilo.id === 'soa' && compliance >= 4) { score += 8; motivos.push('governança e integração controlada podem ajudar'); }
+        if (estilo.id === 'event-driven' && compliance >= 4) { score -= 4; motivos.push('rastreabilidade exige mais cuidado em ambientes regulados'); }
+        if (estilo.id === 'layered' && componentes.includes('ia') && componentes.includes('analytics')) { score -= 4; motivos.push('pode exigir separações mais claras ao crescer'); }
+        if (estilo.id === 'event-driven' && componentes.includes('notificacoes')) { score += 6; motivos.push('notificações combinam bem com fluxos assíncronos'); }
+        if (estilo.id === 'service-based' && componentes.includes('integracao-external')) { score += 5; motivos.push('integrações externas podem justificar separação parcial por serviços'); }
+        if (estilo.id === 'modular-monolith' && componentes.includes('workflow')) { score += 4; motivos.push('fluxos internos complexos ainda podem caber bem em módulos consistentes'); }
+
+        return { ...estilo, score, motivos };
+      }).sort((a, b) => b.score - a.score);
+
+      renderRanking();
+    }
+
+    function renderRanking() {
+      const topCards = document.getElementById('topCards');
+      const rankingBody = document.getElementById('rankingBody');
+      const top3 = estado.ranking.slice(0, 3);
+
+      topCards.innerHTML = top3.map((item, idx) => `
+        <div class="patternCard">
+          <div class="rank">#${idx + 1}</div>
+          <h3>${item.nome}</h3>
+          <div class="mini">${item.resumo}</div>
+          <div>
+            <span class="badge">Partição: ${item.particao}</span>
+            <span class="badge">Pontuação: ${item.score}</span>
+            <span class="badge">Custo: ${renderMoney(item.custo)}</span>
+          </div>
+          <div class="mini"><strong>Por que subiu:</strong> ${item.motivos.slice(0, 3).join('; ') || 'adequação geral ao contexto informado'}.</div>
+        </div>
+      `).join('');
+
+      rankingBody.innerHTML = estado.ranking.map((item, idx) => `
+        <tr>
+          <td><strong>${idx + 1}</strong></td>
+          <td><strong>${item.nome}</strong></td>
+          <td>${item.particao}</td>
+          <td>${item.score}</td>
+          <td class="money">${renderMoney(item.custo)}</td>
+          <td class="stars">${renderStars(item.base.modificabilidade)}</td>
+          <td class="stars">${renderStars(item.base.testabilidade)}</td>
+          <td class="stars">${renderStars(item.base.deployabilidade)}</td>
+          <td class="stars">${renderStars(item.base.simplicidade)}</td>
+          <td class="stars">${renderStars(item.base.escalabilidade)}</td>
+          <td class="stars">${renderStars(item.base.elasticidade)}</td>
+          <td class="stars">${renderStars(item.base.desempenho)}</td>
+          <td class="stars">${renderStars(item.base.resiliencia)}</td>
+          <td class="stars">${renderStars(item.base.observabilidade)}</td>
+          <td class="stars">${renderStars(item.base.interoperabilidade)}</td>
+          <td>${(item.motivos.slice(0, 2).join('; ') || item.resumo)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function gerarSaidasFinais() {
+      const melhor = estado.ranking[0];
+      const segunda = estado.ranking[1];
+      const terceira = estado.ranking[2];
+      const nome = valor('nomeSistema') || 'Novo sistema';
+      const resumo = valor('resumoIdeia') || 'Sem resumo preenchido';
+      const ilitiesOrdenadas = Object.entries(estado.ilities)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 7)
+        .map(([k, v]) => `${rotuloIlity(k)} (${v})`);
+
+      document.getElementById('resumoFinal').innerHTML = `
+        <strong>Resumo da recomendação</strong><br><br>
+        <strong>Projeto:</strong> ${esc(nome)}<br>
+        <strong>Ideia:</strong> ${esc(resumo)}<br><br>
+        <strong>Estilo mais indicado neste momento:</strong> ${melhor?.nome || '-'}<br>
+        <strong>Alternativas próximas:</strong> ${segunda?.nome || '-'} e ${terceira?.nome || '-'}<br><br>
+        <strong>Prioridades mais fortes:</strong> ${ilitiesOrdenadas.join(', ')}<br><br>
+        <strong>Leitura da decisão:</strong> a ferramenta sugere um ponto de partida arquitetural, mostrando por que alguns estilos subiram e outros caíram. A decisão final pode ser revisada após o MVP, depois da descoberta de domínio e da medição de riscos reais.
+      `;
+
+      const adr = `ADR-001 — Estilo arquitetural inicial\n\nStatus: Proposto\n\nContexto\n${nome}: ${resumo}\n\nDrivers principais\n- Características prioritárias: ${ilitiesOrdenadas.join(', ')}\n- Equipe: ${textoEquipe(valor('tamanhoEquipe'))}\n- Volume esperado: ${textoVolume(valor('volumeUsuarios'))}\n- Pressão de prazo: ${textoPrazo(valor('pressaoPrazo'))}\n- Integração com legado: ${textoEscala(valor('integracaoLegado'))}\n- Compliance: ${textoEscala(valor('compliance'))}\n\nDecisão\nAdotar inicialmente o estilo ${melhor?.nome || 'N/D'}.\n\nJustificativa\n${(melhor?.motivos || []).slice(0,4).map(m => `- ${m}`).join('\n')}\n\nAlternativas consideradas\n- ${segunda?.nome || 'N/D'}\n- ${terceira?.nome || 'N/D'}\n\nConsequências positivas\n${(melhor?.fortes || []).map(m => `- ${m}`).join('\n')}\n\nRiscos e compensações\n${(melhor?.riscos || []).map(m => `- ${m}`).join('\n')}\n\nPróximos passos\n- detalhar módulos, serviços ou contêineres principais\n- desenhar C4 mais preciso com integrações reais\n- definir decisões tecnológicas específicas\n- revisar a arquitetura ao final do MVP\n`;
+
+      document.getElementById('adrOutput').textContent = adr;
+      renderC4();
+      document.getElementById('refsPrint').innerHTML = document.querySelector('.refCard:last-of-type').innerHTML;
+    }
+
+    function renderC4() {
+      const nome = esc(valor('nomeSistema') || 'Sistema');
+      const tipo = esc(valor('tipoProduto') || 'Produto digital');
+      const componentes = selecionados('componentTag');
+      const externos = [];
+      if (componentes.includes('pagamentos')) externos.push('Gateway de pagamento');
+      if (componentes.includes('integracao-external')) externos.push('APIs externas');
+      if (componentes.includes('notificacoes')) externos.push('Serviço de e-mail/SMS/push');
+      if (componentes.includes('analytics')) externos.push('Plataforma analítica');
+      const pessoa = componentes.includes('auth') ? 'Usuário autenticado' : 'Usuário';
+      const containers = inferirContainers(componentes);
+      const svg = gerarSvgC4(nome, tipo, pessoa, containers, externos);
+      document.getElementById('c4Diagram').innerHTML = svg;
+    }
+
+    function inferirContainers(componentes) {
+      const containers = [];
+      containers.push({ nome: 'Frontend Web/App', desc: 'Interface principal', x: 230, y: 40 });
+      containers.push({ nome: 'Backend / API', desc: 'Regras de negócio e endpoints', x: 230, y: 180 });
+      if (componentes.includes('db-relacional')) containers.push({ nome: 'Banco relacional', desc: 'Persistência principal', x: 230, y: 320 });
+      if (componentes.includes('cache')) containers.push({ nome: 'Cache', desc: 'Aceleração de leitura', x: 510, y: 180 });
+      if (componentes.includes('fila') || componentes.includes('event-bus')) containers.push({ nome: 'Fila / Broker', desc: 'Mensageria assíncrona', x: 510, y: 320 });
+      if (componentes.includes('arquivos')) containers.push({ nome: 'Storage de arquivos', desc: 'Documentos, imagens, anexos', x: 510, y: 40 });
+      if (componentes.includes('analytics')) containers.push({ nome: 'Analytics', desc: 'Indicadores e relatórios', x: 790, y: 40 });
+      if (componentes.includes('ia')) containers.push({ nome: 'Módulo de IA', desc: 'Inferência, recomendação ou análise', x: 790, y: 180 });
+      return containers;
+    }
+
+    function gerarSvgC4(nome, tipo, pessoa, containers, externos) {
+      const w = 1080;
+      const h = 470;
+      const containerRects = containers.map((c, i) => `
+        <rect x="${c.x}" y="${c.y}" rx="16" ry="16" width="220" height="84" fill="#ecfccb" stroke="#9ac66d" />
+        <text x="${c.x + 110}" y="${c.y + 30}" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">${c.nome}</text>
+        <text x="${c.x + 110}" y="${c.y + 54}" text-anchor="middle" font-size="12" fill="#475569">${c.desc}</text>
+      `).join('');
+
+      const externalRects = externos.map((nomeExt, i) => {
+        const x = 790;
+        const y = 300 + i * 96;
+        return `
+          <rect x="${x}" y="${y}" rx="16" ry="16" width="220" height="70" fill="#fef3c7" stroke="#eab308" />
+          <text x="${x + 110}" y="${y + 32}" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">${nomeExt}</text>
+          <text x="${x + 110}" y="${y + 52}" text-anchor="middle" font-size="12" fill="#475569">Sistema externo</text>
+        `;
+      }).join('');
+
+      const lines = [];
+      if (containers.length >= 2) lines.push(line(450, 82, 340, 180), line(340, 264, 340, 320));
+      if (containers.find(c => c.nome === 'Cache')) lines.push(line(450, 222, 510, 222));
+      if (containers.find(c => c.nome === 'Fila / Broker')) lines.push(line(450, 246, 510, 348));
+      if (containers.find(c => c.nome === 'Storage de arquivos')) lines.push(line(450, 82, 510, 82));
+      if (containers.find(c => c.nome === 'Analytics')) lines.push(line(730, 82, 790, 82));
+      if (containers.find(c => c.nome === 'Módulo de IA')) lines.push(line(730, 222, 790, 222));
+      externos.forEach((_, idx) => lines.push(line(730, 222, 790, 335 + idx * 96)));
+
+      return `
+        <svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" aria-label="Diagrama C4 inicial">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280"></path>
+            </marker>
+          </defs>
+          <rect x="20" y="20" rx="18" ry="18" width="1040" height="430" fill="#ffffff" stroke="#dbe2ef" />
+          <text x="40" y="50" font-size="20" font-weight="800" fill="#172033">C4 inicial — ${nome}</text>
+          <text x="40" y="74" font-size="13" fill="#5a6478">Visão simplificada de contexto + contêineres principais | ${tipo}</text>
+
+          <rect x="40" y="160" rx="16" ry="16" width="130" height="90" fill="#ede9fe" stroke="#a78bfa" />
+          <text x="105" y="194" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">${pessoa}</text>
+          <text x="105" y="216" text-anchor="middle" font-size="12" fill="#475569">Ator principal</text>
+
+          <rect x="200" y="110" rx="20" ry="20" width="860" height="290" fill="#dbeafe" stroke="#60a5fa" />
+          <text x="230" y="136" font-size="18" font-weight="800" fill="#1f2937">${nome}</text>
+          <text x="230" y="157" font-size="12" fill="#475569">Sistema principal e seus contêineres</text>
+
+          ${containerRects}
+          ${externalRects}
+          ${lines.join('')}
+          ${line(170, 205, 230, 82)}
+          ${line(170, 205, 230, 222)}
+        </svg>
+      `;
+    }
+
+    function line(x1, y1, x2, y2) {
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)" />`;
+    }
+
+    function renderStars(n) { return '★'.repeat(Math.max(0, n || 0)); }
+    function renderMoney(n) { return '$'.repeat(Math.max(1, n || 1)); }
+    function rotuloIlity(id) {
+      return {
+        'modificabilidade': 'Modificabilidade', 'escalabilidade': 'Escalabilidade', 'disponibilidade': 'Disponibilidade', 'desempenho': 'Desempenho',
+        'seguranca': 'Segurança', 'testabilidade': 'Testabilidade', 'deployabilidade': 'Deployabilidade', 'interoperabilidade': 'Interoperabilidade',
+        'observabilidade': 'Observabilidade', 'simplicidade': 'Simplicidade', 'elasticidade': 'Elasticidade', 'resiliencia': 'Resiliência',
+        'extensibilidade': 'Extensibilidade', 'adaptabilidade': 'Adaptabilidade', 'workflow': 'Workflow', 'integridade-dados': 'Integridade de dados',
+        'consistencia-dados': 'Consistência de dados', 'abstracao': 'Abstração'
+      }[id] || id;
+    }
+
+    function textoEquipe(v) { return { '1':'1 a 3 pessoas', '2':'4 a 8 pessoas', '3':'9 a 20 pessoas', '4':'21 a 50 pessoas', '5':'Mais de 50 pessoas' }[v] || v; }
+    function textoVolume(v) { return { '1':'Até 1 mil', '2':'1 mil a 10 mil', '3':'10 mil a 100 mil', '4':'100 mil a 1 milhão', '5':'Acima de 1 milhão' }[v] || v; }
+    function textoPrazo(v) { return { '5':'Altíssima', '4':'Alta', '3':'Média', '2':'Baixa', '1':'Muito baixa' }[v] || v; }
+    function textoEscala(v) { return { '1':'Muito baixa', '2':'Baixa', '3':'Média', '4':'Alta', '5':'Muito alta' }[v] || v; }
+
+    function esc(txt) {
+      return String(txt).replace(/[&<>\"]/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[s]));
+    }
+
+    function gerarMarkdown() {
+      const melhor = estado.ranking[0] || {};
+      const segunda = estado.ranking[1] || {};
+      const terceira = estado.ranking[2] || {};
+      const topIlities = Object.entries(estado.ilities).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([k,v]) => `- ${rotuloIlity(k)}: ${v}`).join('\n');
+      return `# Decisão arquitetural\n\n## Contexto\n- Projeto: ${valor('nomeSistema') || 'Novo sistema'}\n- Tipo: ${valor('tipoProduto')}\n- Domínio principal: ${valor('dominioPrincipal') || '-'}\n- Resumo: ${valor('resumoIdeia') || '-'}\n- Objetivo principal: ${valor('objetivoPrincipal') || '-'}\n\n## Características prioritárias\n${topIlities}\n\n## Restrições\n- Orçamento de infraestrutura: ${textoEscala(valor('orcamentoInfra'))}\n- Maturidade DevOps/SRE: ${textoEscala(valor('maturidadeOps'))}\n- Integração com legado: ${textoEscala(valor('integracaoLegado'))}\n- Compliance: ${textoEscala(valor('compliance'))}\n- Contextos: ${selecionados('contextTag').join(', ') || '-'}\n- Componentes: ${selecionados('componentTag').join(', ') || '-'}\n\n## Ranking\n1. ${melhor.nome || '-'}\n2. ${segunda.nome || '-'}\n3. ${terceira.nome || '-'}\n\n## Justificativa\n${(melhor.motivos || []).map(m => `- ${m}`).join('\n')}\n\n## ADR\n\n\`\`\`\n${document.getElementById('adrOutput').textContent}\n\`\`\`\n\n## Referências\n- https://developertoarchitect.com/downloads/worksheets.html\n- Fundamentals of Software Architecture\n- Software Architecture in Practice\n- Documenting Software Architectures\n- C4 Model\n`;
+    }
+
+    document.querySelectorAll('.nextBtn').forEach(btn => btn.addEventListener('click', () => irPara(etapaAtual + 1)));
+    document.querySelectorAll('.prevBtn').forEach(btn => btn.addEventListener('click', () => irPara(etapaAtual - 1)));
+
+    document.getElementById('copiarAdr').addEventListener('click', async () => {
+      const txt = document.getElementById('adrOutput').textContent;
+      await navigator.clipboard.writeText(txt);
+      alert('ADR copiado.');
+    });
+
+    document.getElementById('baixarMarkdown').addEventListener('click', () => {
+      const blob = new Blob([gerarMarkdown()], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'decisao-arquitetural.md';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    document.getElementById('baixarJson').addEventListener('click', () => {
+      const dados = {
+        nomeSistema: valor('nomeSistema'),
+        tipoProduto: valor('tipoProduto'),
+        dominioPrincipal: valor('dominioPrincipal'),
+        resumoIdeia: valor('resumoIdeia'),
+        objetivoPrincipal: valor('objetivoPrincipal'),
+        volumeUsuarios: valor('volumeUsuarios'),
+        tamanhoEquipe: valor('tamanhoEquipe'),
+        pressaoPrazo: valor('pressaoPrazo'),
+        ilities: estado.ilities,
+        orcamentoInfra: valor('orcamentoInfra'),
+        maturidadeOps: valor('maturidadeOps'),
+        integracaoLegado: valor('integracaoLegado'),
+        compliance: valor('compliance'),
+        contextos: selecionados('contextTag'),
+        componentes: selecionados('componentTag'),
+        componentesLivres: valor('componentesLivres'),
+        ranking: estado.ranking,
+        adr: document.getElementById('adrOutput').textContent,
+        markdown: gerarMarkdown()
+      };
+      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'decisao-arquitetural.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    document.getElementById('exportarPdf').addEventListener('click', () => {
+      window.print();
+    });
+
+    document.getElementById('reiniciar').addEventListener('click', () => location.reload());
+
+    montarSteps();
+    montarIlities();
+    irPara(0);
+  </script>
+</body>
+</html>
