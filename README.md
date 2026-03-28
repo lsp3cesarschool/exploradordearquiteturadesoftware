@@ -1,2 +1,2 @@
 # exploradordearquiteturadesoftware
-Explorador de Decisao Arquitetural
+Explorador de Decisões em Arquitetura de Software
